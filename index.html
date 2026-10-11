@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marks Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --paper:#f4f7f9; --grid:#d9e4ec; --ink:#14213d; --muted:#5b6b82;
+  --up:#1b7f4b; --down:#d62839; --line:#b9c9d6; --card:#fcfdfe;
+}
+@media (prefers-color-scheme: dark){
+  :root{--paper:#10192b; --grid:#1a2740; --ink:#e8eef6; --muted:#93a3ba; --up:#4cc38a; --down:#ff6b78; --line:#2b3b57; --card:#15213a;}
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{
+  margin:0; color:var(--ink); background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+  font-family:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif; line-height:1.5;
+}
+main{max-width:1040px; margin:0 auto; padding:24px 18px 60px}
+header{display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:flex-start; margin-bottom:22px}
+h1{font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.03em; margin:0 0 4px; line-height:1.05}
+.sub{color:var(--muted); margin:0; max-width:56ch}
+.user{display:flex; align-items:center; gap:10px}
+.user img{width:34px; height:34px; border-radius:50%; border:1.5px solid var(--ink)}
+.panel{background:var(--card); border:1.5px solid var(--ink); border-radius:6px; padding:18px; margin-bottom:20px}
+.panel h2{font-size:1.1rem; margin:0 0 12px; font-weight:600}
+.verdict{display:flex; flex-wrap:wrap; gap:6px 20px; align-items:baseline; margin-bottom:14px}
+.verdict .big{font-size:clamp(2.4rem,9vw,4.6rem); font-weight:800; letter-spacing:-.04em; line-height:1}
+.big.up{color:var(--up)} .big.down{color:var(--down)}
+.verdict .note{color:var(--muted); max-width:40ch}
+.stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-top:14px}
+.stat{border-left:3px solid var(--line); padding-left:10px}
+.stat b{display:block; font-size:1.35rem; font-weight:600}
+.stat span{color:var(--muted); font-size:.85rem}
+.chart-wrap{position:relative; height:330px}
+form{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end}
+label{display:flex; flex-direction:column; gap:4px; font-size:.85rem; color:var(--muted)}
+input,select{font:inherit; color:var(--ink); background:var(--paper); border:1.5px solid var(--line); border-radius:4px; padding:8px 10px; min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--ink); outline-offset:2px}
+button{font:inherit; font-weight:600; cursor:pointer; border-radius:4px; padding:9px 14px; border:1.5px solid var(--ink); background:var(--ink); color:var(--paper)}
+button.ghost{background:transparent; color:var(--ink)}
+button.x{padding:0 6px; font-weight:400; border:0; background:transparent; color:var(--muted); line-height:1.2}
+.bar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px}
+.tablewrap{overflow-x:auto}
+table{width:100%; border-collapse:collapse; min-width:720px}
+th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); font-weight:400; vertical-align:top}
+th{font-weight:600; color:var(--muted); font-size:.85rem}
+td .pc{font-weight:600} td small{display:block; color:var(--muted)}
+.d-up{color:var(--up); font-weight:600} .d-down{color:var(--down); font-weight:600}
+.empty{color:var(--muted); margin:0}
+.foot{color:var(--muted); font-size:.85rem}
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px}
+.rc{border:1.5px solid var(--line); border-radius:6px; padding:14px}
+.rc h3{margin:0 0 10px; font-size:1rem}
+.rc img{width:100%; max-height:240px; object-fit:cover; object-position:top; border:1px solid var(--line); border-radius:4px; cursor:zoom-in; display:block; margin-bottom:10px}
+.rc .row{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+.rc input[type=text]{width:100%}
+.msg{color:var(--muted); font-size:.85rem; margin:6px 0 0; min-height:1.2em}
+.gate{text-align:center; padding:40px 18px}
+.gate p{color:var(--muted); max-width:46ch; margin:0 auto 18px}
+.warn{border-color:var(--down)}
+.warn code{background:var(--paper); padding:1px 5px; border-radius:3px}
+dialog{border:1.5px solid var(--ink); border-radius:6px; padding:12px; max-width:min(96vw,1000px); background:var(--card); color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.6)}
+dialog img{max-width:100%; max-height:80vh; display:block; margin:0 auto 10px}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Marks Tracker</h1>
+      <p class="sub">Add your marks after every exam and see whether you are improving, subject by subject.</p>
+    </div>
+    <div class="user" id="user" hidden>
+      <img id="avatar" alt="" referrerpolicy="no-referrer">
+      <span id="uname"></span>
+      <button class="ghost" id="signout" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <section class="panel warn" id="setup" hidden>
+    <h2>One-time setup needed</h2>
+    <p class="empty">Open <code>index.html</code>, find <code>firebaseConfig</code> near the bottom, and paste the values from your Firebase project. Follow the setup steps you were given, then reload this page.</p>
+  </section>
+
+  <section class="panel gate" id="gate" hidden>
+    <h2>Sign in to see your marks</h2>
+    <p>Your marks and report cards are saved to your Google account, so you can open this page on any phone or computer and find them.</p>
+    <button id="signin" type="button">Sign in with Google</button>
+    <p class="msg" id="gatemsg" role="alert"></p>
+  </section>
+
+  <div id="app" hidden>
+    <section class="panel" aria-labelledby="progress-h">
+      <div class="bar">
+        <h2 id="progress-h" style="margin:0">Your progress</h2>
+        <label style="flex-direction:row;align-items:center;gap:8px">Subject <select id="filter"></select></label>
+      </div>
+      <div id="verdict"></div>
+      <div class="chart-wrap"><canvas id="chart" role="img" aria-label="Line chart of marks percentage across exams"></canvas></div>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="add-h">
+      <h2 id="add-h">Add marks</h2>
+      <form id="form">
+        <label>Exam <select id="exam" required></select></label>
+        <label>Subject <input id="subject" list="subjects" required placeholder="Maths"></label>
+        <datalist id="subjects"></datalist>
+        <label>Marks obtained <input id="score" type="number" min="0" step="any" required></label>
+        <label>Out of <input id="total" type="number" min="1" step="any" required value="100"></label>
+        <button type="submit">Save marks</button>
+      </form>
+      <p class="msg" id="addmsg" role="status">Saving the same subject and exam again replaces the old marks.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="hist-h">
+      <h2 id="hist-h">All results</h2>
+      <div class="tablewrap" id="table"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="rc-h">
+      <h2 id="rc-h">Report cards</h2>
+      <div class="cards" id="cards"></div>
+      <p class="msg">Upload a photo or screenshot (JPG or PNG). It is resized automatically. PDFs are not supported.</p>
+    </section>
+  </div>
+</main>
+
+<dialog id="viewer">
+  <img id="viewerImg" alt="Report card">
+  <button class="ghost" id="closeViewer" type="button">Close</button>
+</dialog>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAZ-s7MPNTmRqdstVVawdvaKQRXaxf1bNg",
+  authDomain: "marks-tracker-aeacd.firebaseapp.com",
+  projectId: "marks-tracker-aeacd",
+  appId: "1:634242839208:web:4d9f512d7d149a092cc89d"
+};
+
+const EXAMS = ["Weekly Milestone 1","Pre Mid Term","Half Yearly","Weekly Milestone 2","Post Mid Term","Final Exam"];
+const TERMS = [{id:"term1", name:"Term 1 report card"}, {id:"term2", name:"Term 2 report card"}];
+const palette = ["#2563eb","#d62839","#1b7f4b","#b7791f","#7c3aed","#0891b2","#be185d","#4b5563"];
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => (Math.round(n * 10) / 10).toString();
+const pct = m => m.score / m.total * 100;
+const slug = s => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "subject";
+
+$("exam").innerHTML = EXAMS.map((e,i) => `<option value="${i}">${e}</option>`).join("");
+
+if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith("PASTE")) {
+  $("setup").hidden = false;
+  throw new Error("Firebase config missing");
+}
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+let uid = null, marks = [], cards = {}, chart, unsubs = [];
+
+$("signin").onclick = async () => {
+  $("gatemsg").textContent = "";
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch (e) { $("gatemsg").textContent = "Sign-in failed (" + (e.code || e.message) + "). Allow pop-ups for this site and try again."; }
+};
+$("signout").onclick = () => signOut(auth);
+
+onAuthStateChanged(auth, user => {
+  unsubs.forEach(u => u()); unsubs = []; marks = []; cards = {};
+  if (!user) { uid = null; $("gate").hidden = false; $("app").hidden = true; $("user").hidden = true; return; }
+  uid = user.uid;
+  $("gate").hidden = true; $("app").hidden = false; $("user").hidden = false;
+  $("avatar").src = user.photoURL || ""; $("uname").textContent = user.displayName || user.email || "";
+  const onErr = e => { $("addmsg").textContent = "Could not load data: " + e.code + ". Check your Firestore rules."; };
+  unsubs.push(onSnapshot(collection(db, "users", uid, "marks"), snap => { marks = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }, onErr));
+  unsubs.push(onSnapshot(collection(db, "users", uid, "reportCards"), snap => { cards = {}; snap.docs.forEach(d => cards[d.id] = d.data()); renderCards(); }, onErr));
+});
+
+$("form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const name = $("subject").value.trim(), examIndex = +$("exam").value;
+  const score = parseFloat($("score").value), total = parseFloat($("total").value);
+  if (score > total) { $("addmsg").textContent = "Marks obtained cannot be more than the total."; return; }
+  try {
+    await setDoc(doc(db, "users", uid, "marks", slug(name) + "__" + examIndex),
+      { subject: name, sid: slug(name), exam: EXAMS[examIndex], examIndex, score, total, updatedAt: serverTimestamp() });
+    $("addmsg").textContent = `Saved ${name}, ${EXAMS[examIndex]}.`;
+    $("score").value = ""; $("filter").value = slug(name); render();
+  } catch (e) { $("addmsg").textContent = "Could not save: " + e.code; }
+});
+$("filter").onchange = render;
+
+function subjects(){
+  const map = new Map();
+  marks.forEach(m => { if (!map.has(m.sid)) map.set(m.sid, m.subject); });
+  return [...map].map(([id,name]) => ({id,name})).sort((a,b) => a.name.localeCompare(b.name));
+}
+function seriesFor(sel){
+  return EXAMS.map((_,i) => {
+    const here = marks.filter(m => m.examIndex === i && (sel === "__all" || m.sid === sel));
+    return here.length ? here.map(pct).reduce((a,b)=>a+b,0) / here.length : null;
+  });
+}
+
+function render(){
+  const subs = subjects(), cur = $("filter").value || "__all";
+  $("filter").innerHTML = `<option value="__all">All subjects</option>` + subs.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
+  $("filter").value = (cur === "__all" || subs.some(s => s.id === cur)) ? cur : "__all";
+  $("subjects").innerHTML = subs.map(s => `<option value="${esc(s.name)}">`).join("");
+  const sel = $("filter").value;
+  renderSummary(sel, subs); renderChart(sel, subs); renderTable(subs);
+}
+
+function renderSummary(sel, subs){
+  const pts = seriesFor(sel).map((v,i) => ({v,i})).filter(p => p.v !== null);
+  if (!pts.length){
+    $("verdict").innerHTML = `<p class="empty">No marks yet. Add your first exam result below and your progress will appear here.</p>`;
+    $("stats").innerHTML = ""; return;
+  }
+  const last = pts[pts.length-1], vals = pts.map(p => p.v);
+  const what = sel === "__all" ? "overall average" : esc(subs.find(s => s.id === sel).name);
+  if (pts.length < 2){
+    $("verdict").innerHTML = `<div class="verdict"><span class="big">${fmt(last.v)}%</span><span class="note">${what} in ${EXAMS[last.i]}. Add another exam to see if you are improving.</span></div>`;
+  } else {
+    const prev = pts[pts.length-2], d = last.v - prev.v, f = last.v - pts[0].v, cls = d >= 0 ? "up" : "down";
+    $("verdict").innerHTML = `<div class="verdict"><span class="big ${cls}">${d>=0?"+":""}${fmt(d)}%</span>
+      <span class="note">${what}: ${d>0?"up":d<0?"down":"unchanged"} in ${EXAMS[last.i]} compared with ${EXAMS[prev.i]}. Since ${EXAMS[pts[0].i]}: ${f>=0?"+":""}${fmt(f)}%.</span></div>`;
+  }
+  $("stats").innerHTML = [["Latest", fmt(last.v)+"%"], ["Average", fmt(vals.reduce((a,b)=>a+b,0)/vals.length)+"%"], ["Best", fmt(Math.max(...vals))+"%"], ["Exams recorded", pts.length]]
+    .map(([k,v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("");
+}
+
+function renderChart(sel, subs){
+  if (chart) chart.destroy();
+  if (typeof Chart === "undefined") return;
+  const cs = getComputedStyle(document.documentElement);
+  const ink = cs.getPropertyValue("--ink").trim(), grid = cs.getPropertyValue("--line").trim();
+  const show = sel === "__all" ? subs : subs.filter(s => s.id === sel);
+  const datasets = show.map(s => {
+    const c = palette[subs.findIndex(x => x.id === s.id) % palette.length];
+    return { label: s.name, data: seriesFor(s.id).map(v => v === null ? null : +v.toFixed(1)), borderColor:c, backgroundColor:c, tension:.25, pointRadius:4, borderWidth:2.5, spanGaps:true };
+  });
+  if (sel === "__all" && subs.length > 1)
+    datasets.push({ label:"Overall average", data: seriesFor("__all").map(v => v === null ? null : +v.toFixed(1)), borderColor:ink, backgroundColor:ink, borderDash:[6,5], borderWidth:3, pointRadius:5, spanGaps:true });
+  chart = new Chart($("chart"), {
+    type:"line", data:{ labels: EXAMS, datasets },
+    options:{ responsive:true, maintainAspectRatio:false, animation:false,
+      scales:{ x:{ ticks:{color:ink}, grid:{color:grid} },
+               y:{ min:0, max:100, ticks:{color:ink, callback:v => v+"%"}, grid:{color:grid} } },
+      plugins:{ legend:{ display: datasets.length > 1, labels:{color:ink} },
+                tooltip:{ callbacks:{ label:c => `${c.dataset.label}: ${c.parsed.y}%` } } } }
+  });
+}
+
+function renderTable(subs){
+  if (!marks.length){ $("table").innerHTML = `<p class="empty">Nothing saved yet.</p>`; return; }
+  const look = {}; marks.forEach(m => look[m.sid + "|" + m.examIndex] = m);
+  const rows = subs.map(s => {
+    let prev = null;
+    const cells = EXAMS.map((_,i) => {
+      const m = look[s.id + "|" + i];
+      if (!m) return `<td>–</td>`;
+      const p = pct(m); let d = "";
+      if (prev !== null){ const c = p - prev; d = ` <span class="${c>=0?"d-up":"d-down"}">${c>=0?"+":""}${fmt(c)}</span>`; }
+      prev = p;
+      return `<td><span class="pc">${fmt(p)}%</span>${d}<small>${m.score}/${m.total} <button class="x" data-id="${m.id}" aria-label="Delete ${esc(s.name)} ${EXAMS[i]}">×</button></small></td>`;
+    }).join("");
+    return `<tr><th scope="row" style="color:var(--ink)">${esc(s.name)}</th>${cells}</tr>`;
+  }).join("");
+  $("table").innerHTML = `<table><thead><tr><th>Subject</th>${EXAMS.map(e => `<th>${e}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>`;
+  $("table").querySelectorAll(".x").forEach(b => b.onclick = async () => {
+    if (confirm("Delete this result?")) await deleteDoc(doc(db, "users", uid, "marks", b.dataset.id));
+  });
+}
+
+/* ---------- Report cards ---------- */
+async function compress(file){
+  const bmp = await createImageBitmap(file);
+  let max = 1600, q = .78;
+  for (let i = 0; i < 7; i++){
+    const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas"); c.width = Math.round(bmp.width*s); c.height = Math.round(bmp.height*s);
+    c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+    const out = c.toDataURL("image/jpeg", q);
+    if (out.length < 900000) return out;
+    max *= .8; q -= .07;
+  }
+  throw new Error("Image is too large");
+}
+
+function renderCards(){
+  $("cards").innerHTML = TERMS.map(t => {
+    const c = cards[t.id];
+    return `<div class="rc" data-term="${t.id}"><h3>${t.name}</h3>
+      ${c && c.imageData ? `<img src="${c.imageData}" alt="${t.name}" data-view="1">` : `<p class="empty">No report card uploaded yet.</p>`}
+      <input type="text" placeholder="Note, e.g. overall 86%, rank 4" value="${c ? esc(c.note || "") : ""}" aria-label="Note for ${t.name}" data-note="1">
+      <div class="row">
+        <label class="ghostlabel"><input type="file" accept="image/*" hidden data-up="1"><button type="button" class="ghost" data-pick="1">${c && c.imageData ? "Replace" : "Upload"}</button></label>
+        ${c && c.imageData ? `<button type="button" class="ghost" data-del="1">Delete</button>` : ""}
+      </div><p class="msg" data-msg="1"></p></div>`;
+  }).join("");
+  document.querySelectorAll(".rc").forEach(el => {
+    const id = el.dataset.term, msg = el.querySelector("[data-msg]");
+    const img = el.querySelector("[data-view]");
+    if (img) img.onclick = () => { $("viewerImg").src = img.src; $("viewer").showModal(); };
+    el.querySelector("[data-pick]").onclick = () => el.querySelector("[data-up]").click();
+    el.querySelector("[data-up]").onchange = async ev => {
+      const f = ev.target.files[0]; if (!f) return;
+      msg.textContent = "Saving…";
+      try {
+        const imageData = await compress(f);
+        await setDoc(doc(db, "users", uid, "reportCards", id), { imageData, updatedAt: serverTimestamp() }, { merge: true });
+      } catch (e) { msg.textContent = "Could not save. Use a JPG or PNG photo. (" + (e.code || e.message) + ")"; }
+    };
+    el.querySelector("[data-note]").onchange = async ev => {
+      try { await setDoc(doc(db, "users", uid, "reportCards", id), { note: ev.target.value.trim(), updatedAt: serverTimestamp() }, { merge: true }); msg.textContent = "Note saved."; }
+      catch (e) { msg.textContent = "Could not save note."; }
+    };
+    const d = el.querySelector("[data-del]");
+    if (d) d.onclick = async () => { if (confirm("Delete this report card?")) await deleteDoc(doc(db, "users", uid, "reportCards", id)); };
+  });
+}
+$("closeViewer").onclick = () => $("viewer").close();
+</script>
+</body>
+</html>
