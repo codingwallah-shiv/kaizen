@@ -41,6 +41,9 @@ h1{font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.03em; mar
 .stat b{display:block; font-size:1.35rem; font-weight:600}
 .stat span{color:var(--muted); font-size:.85rem}
 .chart-wrap{position:relative; height:330px}
+.totgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px}
+#totForm{display:block}
+#totForm button{margin-top:12px}
 form{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end}
 label{display:flex; flex-direction:column; gap:4px; font-size:.85rem; color:var(--muted)}
 input,select{font:inherit; color:var(--ink); background:var(--paper); border:1.5px solid var(--line); border-radius:4px; padding:8px 10px; min-width:0}
@@ -110,6 +113,15 @@ dialog img{max-width:100%; max-height:80vh; display:block; margin:0 auto 10px}
       <div class="stats" id="stats"></div>
     </section>
 
+    <section class="panel" aria-labelledby="tot-h">
+      <h2 id="tot-h">Exam total marks</h2>
+      <form id="totForm">
+        <div class="totgrid" id="totInputs"></div>
+        <button type="submit">Save totals</button>
+      </form>
+      <p class="msg" id="totmsg" role="status">Set each exam's total once. It fills in automatically when you add marks.</p>
+    </section>
+
     <section class="panel" aria-labelledby="add-h">
       <h2 id="add-h">Add marks</h2>
       <form id="form">
@@ -117,7 +129,7 @@ dialog img{max-width:100%; max-height:80vh; display:block; margin:0 auto 10px}
         <label>Subject <input id="subject" list="subjects" required placeholder="Maths"></label>
         <datalist id="subjects"></datalist>
         <label>Marks obtained <input id="score" type="number" min="0" step="any" required></label>
-        <label>Out of <input id="total" type="number" min="1" step="any" required value="100"></label>
+        <label>Out of (filled from exam total) <input id="total" type="number" min="1" step="any" required value="100"></label>
         <button type="submit">Save marks</button>
       </form>
       <p class="msg" id="addmsg" role="status">Saving the same subject and exam again replaces the old marks.</p>
@@ -146,13 +158,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-
+/* ---------- PASTE YOUR FIREBASE CONFIG HERE ---------- */
 const firebaseConfig = {
   apiKey: "AIzaSyAZ-s7MPNTmRqdstVVawdvaKQRXaxf1bNg",
   authDomain: "marks-tracker-aeacd.firebaseapp.com",
   projectId: "marks-tracker-aeacd",
   appId: "1:634242839208:web:4d9f512d7d149a092cc89d"
 };
+/* ----------------------------------------------------- */
 
 const EXAMS = ["Weekly Milestone 1","Pre Mid Term","Half Yearly","Weekly Milestone 2","Post Mid Term","Final Exam"];
 const TERMS = [{id:"term1", name:"Term 1 report card"}, {id:"term2", name:"Term 2 report card"}];
@@ -175,6 +188,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 let uid = null, marks = [], cards = {}, chart, unsubs = [];
+let totals = EXAMS.map(() => 100);
 
 $("signin").onclick = async () => {
   $("gatemsg").textContent = "";
@@ -184,7 +198,7 @@ $("signin").onclick = async () => {
 $("signout").onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
-  unsubs.forEach(u => u()); unsubs = []; marks = []; cards = {};
+  unsubs.forEach(u => u()); unsubs = []; marks = []; cards = {}; totals = EXAMS.map(() => 100);
   if (!user) { uid = null; $("gate").hidden = false; $("app").hidden = true; $("user").hidden = true; return; }
   uid = user.uid;
   $("gate").hidden = true; $("app").hidden = false; $("user").hidden = false;
@@ -192,6 +206,11 @@ onAuthStateChanged(auth, user => {
   const onErr = e => { $("addmsg").textContent = "Could not load data: " + e.code + ". Check your Firestore rules."; };
   unsubs.push(onSnapshot(collection(db, "users", uid, "marks"), snap => { marks = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }, onErr));
   unsubs.push(onSnapshot(collection(db, "users", uid, "reportCards"), snap => { cards = {}; snap.docs.forEach(d => cards[d.id] = d.data()); renderCards(); }, onErr));
+  unsubs.push(onSnapshot(doc(db, "users", uid, "settings", "examTotals"), snap => {
+    const t = snap.exists() ? snap.data().totals : null;
+    totals = EXAMS.map((_, i) => (t && t[i] > 0) ? t[i] : 100);
+    renderTotals(); fillTotal();
+  }, onErr));
 });
 
 $("form").addEventListener("submit", async ev => {
@@ -207,6 +226,22 @@ $("form").addEventListener("submit", async ev => {
   } catch (e) { $("addmsg").textContent = "Could not save: " + e.code; }
 });
 $("filter").onchange = render;
+
+$("exam").onchange = fillTotal;
+function fillTotal(){ $("total").value = totals[+$("exam").value] || 100; }
+function renderTotals(){
+  $("totInputs").innerHTML = EXAMS.map((e,i) => `<label>${e}<input type="number" min="1" step="any" required value="${totals[i]}"></label>`).join("");
+}
+$("totForm").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const vals = [...document.querySelectorAll("#totInputs input")].map(i => parseFloat(i.value));
+  if (vals.some(v => !(v > 0))) { $("totmsg").textContent = "Every total must be more than 0."; return; }
+  try {
+    await setDoc(doc(db, "users", uid, "settings", "examTotals"), { totals: vals, updatedAt: serverTimestamp() });
+    $("totmsg").textContent = "Totals saved. Marks you saved earlier keep their own totals.";
+  } catch (e) { $("totmsg").textContent = "Could not save: " + e.code; }
+});
+renderTotals(); fillTotal();
 
 function subjects(){
   const map = new Map();
