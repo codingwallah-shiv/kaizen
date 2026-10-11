@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Marks Tracker</title>
+<title>Kaizen | Marks Tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='11' fill='%2314213d'/%3E%3Cpath d='M10 33L19 24L25 29L37 15' fill='none' stroke='%23ffffff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3Ccircle cx='37' cy='15' r='4.2' fill='%234cc38a'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
@@ -28,6 +29,16 @@ main{max-width:1040px; margin:0 auto; padding:24px 18px 60px}
 header{display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between; align-items:flex-start; margin-bottom:22px}
 h1{font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.03em; margin:0 0 4px; line-height:1.05}
 .sub{color:var(--muted); margin:0; max-width:56ch}
+.brand{display:flex; gap:14px; align-items:center}
+.logo{width:clamp(46px,9vw,66px); height:auto; flex:none}
+.credit{margin-top:32px; padding-top:16px; border-top:1.5px solid var(--line); color:var(--muted); font-size:.9rem}
+.credit p{margin:2px 0}
+.credit a{color:var(--ink)}
+.coach{max-width:70ch}
+.coach .lead{font-size:1.1rem; margin:0 0 4px}
+.coach h3{font-size:.95rem; margin:16px 0 4px; font-weight:600}
+.coach ul{margin:0; padding-left:20px}
+.coach li{margin:4px 0}
 .user{display:flex; align-items:center; gap:10px}
 .user img{width:34px; height:34px; border-radius:50%; border:1.5px solid var(--ink)}
 .panel{background:var(--card); border:1.5px solid var(--ink); border-radius:6px; padding:18px; margin-bottom:20px}
@@ -44,6 +55,17 @@ h1{font-size:clamp(2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.03em; mar
 .totgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px}
 #totForm{display:block}
 #totForm button{margin-top:12px}
+#entryForm{display:block}
+#addSubForm{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px}
+#addSubForm input{flex:1 1 200px}
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px}
+.chip{display:inline-flex; align-items:center; gap:4px; border:1.5px solid var(--line); border-radius:999px; padding:3px 6px 3px 12px}
+.erow{display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--line); flex-wrap:wrap}
+.erow .en{flex:1 1 140px; font-weight:600}
+.erow .em{width:110px}
+.erow .of{color:var(--muted); display:flex; align-items:center; gap:8px; min-width:130px}
+.erow .et{width:80px}
+.erow .ed{font-size:.8rem; text-decoration:underline}
 form{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; align-items:end}
 label{display:flex; flex-direction:column; gap:4px; font-size:.85rem; color:var(--muted)}
 input,select{font:inherit; color:var(--ink); background:var(--paper); border:1.5px solid var(--line); border-radius:4px; padding:8px 10px; min-width:0}
@@ -79,9 +101,16 @@ dialog img{max-width:100%; max-height:80vh; display:block; margin:0 auto 10px}
 <body>
 <main>
   <header>
-    <div>
-      <h1>Marks Tracker</h1>
-      <p class="sub">Add your marks after every exam and see whether you are improving, subject by subject.</p>
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 48 48" role="img" aria-label="Kaizen logo">
+        <rect width="48" height="48" rx="11" style="fill:var(--ink)"/>
+        <path d="M10 33L19 24L25 29L37 15" fill="none" style="stroke:var(--paper)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="37" cy="15" r="4.2" style="fill:var(--up)"/>
+      </svg>
+      <div>
+        <h1>Kaizen</h1>
+        <p class="sub">Continuous improvement, one exam at a time.</p>
+      </div>
     </div>
     <div class="user" id="user" hidden>
       <img id="avatar" alt="" referrerpolicy="no-referrer">
@@ -113,26 +142,38 @@ dialog img{max-width:100%; max-height:80vh; display:block; margin:0 auto 10px}
       <div class="stats" id="stats"></div>
     </section>
 
-    <section class="panel" aria-labelledby="tot-h">
-      <h2 id="tot-h">Exam total marks</h2>
+    <section class="panel" aria-labelledby="coach-h">
+      <div class="bar">
+        <h2 id="coach-h" style="margin:0">Shree AI</h2>
+        <button class="ghost" id="copyAI" type="button">Copy summary for an AI chat</button>
+      </div>
+      <div class="coach" id="coach"></div>
+      <p class="msg" id="coachmsg" role="status">Shree AI works out this feedback on this page from your saved marks. It is guidance, not a prediction.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="set-h">
+      <h2 id="set-h">Set up once: subjects and exam totals</h2>
+      <div class="chips" id="chips"></div>
+      <form id="addSubForm">
+        <input id="newSub" placeholder="Add a subject, e.g. Maths" aria-label="New subject name" required>
+        <button type="submit">Add subject</button>
+      </form>
       <form id="totForm">
         <div class="totgrid" id="totInputs"></div>
         <button type="submit">Save totals</button>
       </form>
-      <p class="msg" id="totmsg" role="status">Set each exam's total once. It fills in automatically when you add marks.</p>
+      <p class="msg" id="totmsg" role="status">Each exam's total is applied to every subject automatically.</p>
     </section>
 
     <section class="panel" aria-labelledby="add-h">
       <h2 id="add-h">Add marks</h2>
-      <form id="form">
-        <label>Exam <select id="exam" required></select></label>
-        <label>Subject <input id="subject" list="subjects" required placeholder="Maths"></label>
-        <datalist id="subjects"></datalist>
-        <label>Marks obtained <input id="score" type="number" min="0" step="any" required></label>
-        <label>Out of (filled from exam total) <input id="total" type="number" min="1" step="any" required value="100"></label>
-        <button type="submit">Save marks</button>
+      <label style="max-width:320px">Exam <select id="exam"></select></label>
+      <p class="msg" id="examNote"></p>
+      <form id="entryForm">
+        <div id="entryRows"></div>
+        <button type="submit" style="margin-top:12px">Save marks</button>
       </form>
-      <p class="msg" id="addmsg" role="status">Saving the same subject and exam again replaces the old marks.</p>
+      <p class="msg" id="addmsg" role="status">Leave a subject empty to skip it. Saving an exam again replaces its old marks.</p>
     </section>
 
     <section class="panel" aria-labelledby="hist-h">
@@ -146,6 +187,10 @@ dialog img{max-width:100%; max-height:80vh; display:block; margin:0 auto 10px}
       <p class="msg">Upload a photo or screenshot (JPG or PNG). It is resized automatically. PDFs are not supported.</p>
     </section>
   </div>
+<footer class="credit">
+    <p>Created by Shivansh Shrivastava</p>
+    <p>Contact: <a href="mailto:techie.shivansh@gmail.com">techie.shivansh@gmail.com</a></p>
+  </footer>
 </main>
 
 <dialog id="viewer">
@@ -189,6 +234,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 let uid = null, marks = [], cards = {}, chart, unsubs = [];
 let totals = EXAMS.map(() => 100);
+let setupSubjects = null, entryDirty = false;
 
 $("signin").onclick = async () => {
   $("gatemsg").textContent = "";
@@ -198,7 +244,7 @@ $("signin").onclick = async () => {
 $("signout").onclick = () => signOut(auth);
 
 onAuthStateChanged(auth, user => {
-  unsubs.forEach(u => u()); unsubs = []; marks = []; cards = {}; totals = EXAMS.map(() => 100);
+  unsubs.forEach(u => u()); unsubs = []; marks = []; cards = {}; totals = EXAMS.map(() => 100); setupSubjects = null; entryDirty = false;
   if (!user) { uid = null; $("gate").hidden = false; $("app").hidden = true; $("user").hidden = true; return; }
   uid = user.uid;
   $("gate").hidden = true; $("app").hidden = false; $("user").hidden = false;
@@ -206,42 +252,98 @@ onAuthStateChanged(auth, user => {
   const onErr = e => { $("addmsg").textContent = "Could not load data: " + e.code + ". Check your Firestore rules."; };
   unsubs.push(onSnapshot(collection(db, "users", uid, "marks"), snap => { marks = snap.docs.map(d => ({id: d.id, ...d.data()})); render(); }, onErr));
   unsubs.push(onSnapshot(collection(db, "users", uid, "reportCards"), snap => { cards = {}; snap.docs.forEach(d => cards[d.id] = d.data()); renderCards(); }, onErr));
-  unsubs.push(onSnapshot(doc(db, "users", uid, "settings", "examTotals"), snap => {
-    const t = snap.exists() ? snap.data().totals : null;
-    totals = EXAMS.map((_, i) => (t && t[i] > 0) ? t[i] : 100);
-    renderTotals(); fillTotal();
+  unsubs.push(onSnapshot(doc(db, "users", uid, "settings", "setup"), snap => {
+    const d = snap.exists() ? snap.data() : {};
+    setupSubjects = Array.isArray(d.subjects) ? d.subjects : null;
+    totals = EXAMS.map((_, i) => (d.totals && d.totals[i] > 0) ? d.totals[i] : 100);
+    renderTotalInputs(); renderChips(); if (!entryDirty) renderEntry();
   }, onErr));
 });
 
-$("form").addEventListener("submit", async ev => {
-  ev.preventDefault();
-  const name = $("subject").value.trim(), examIndex = +$("exam").value;
-  const score = parseFloat($("score").value), total = parseFloat($("total").value);
-  if (score > total) { $("addmsg").textContent = "Marks obtained cannot be more than the total."; return; }
-  try {
-    await setDoc(doc(db, "users", uid, "marks", slug(name) + "__" + examIndex),
-      { subject: name, sid: slug(name), exam: EXAMS[examIndex], examIndex, score, total, updatedAt: serverTimestamp() });
-    $("addmsg").textContent = `Saved ${name}, ${EXAMS[examIndex]}.`;
-    $("score").value = ""; $("filter").value = slug(name); render();
-  } catch (e) { $("addmsg").textContent = "Could not save: " + e.code; }
-});
 $("filter").onchange = render;
 
-$("exam").onchange = fillTotal;
-function fillTotal(){ $("total").value = totals[+$("exam").value] || 100; }
-function renderTotals(){
-  $("totInputs").innerHTML = EXAMS.map((e,i) => `<label>${e}<input type="number" min="1" step="any" required value="${totals[i]}"></label>`).join("");
+const setupRef = () => doc(db, "users", uid, "settings", "setup");
+function effSubjects(){
+  if (setupSubjects) return setupSubjects.map(n => ({id: slug(n), name: n}));
+  return subjects();
+}
+
+/* subjects (set up once) */
+function renderChips(){
+  const subs = effSubjects();
+  $("chips").innerHTML = subs.length
+    ? subs.map(s => `<span class="chip">${esc(s.name)}<button type="button" class="x" data-rm="${esc(s.name)}" aria-label="Remove ${esc(s.name)}">×</button></span>`).join("")
+    : `<p class="empty">No subjects yet. Add your subjects below.</p>`;
+  $("chips").querySelectorAll("[data-rm]").forEach(b => b.onclick = () =>
+    saveSubjects(effSubjects().map(s => s.name).filter(n => n !== b.dataset.rm)));
+}
+async function saveSubjects(names){
+  try { await setDoc(setupRef(), { subjects: names, updatedAt: serverTimestamp() }, { merge: true }); }
+  catch (e) { $("totmsg").textContent = "Could not save subjects: " + e.code; }
+}
+$("addSubForm").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const name = $("newSub").value.trim(); if (!name) return;
+  const names = effSubjects().map(s => s.name);
+  if (names.some(n => slug(n) === slug(name))) { $("totmsg").textContent = name + " is already in the list."; return; }
+  $("newSub").value = ""; saveSubjects([...names, name]);
+});
+
+/* exam totals (set up once) */
+function renderTotalInputs(){
+  $("totInputs").innerHTML = EXAMS.map((e,i) => `<label>${e} total<input type="number" min="1" step="any" required value="${totals[i]}"></label>`).join("");
 }
 $("totForm").addEventListener("submit", async ev => {
   ev.preventDefault();
   const vals = [...document.querySelectorAll("#totInputs input")].map(i => parseFloat(i.value));
   if (vals.some(v => !(v > 0))) { $("totmsg").textContent = "Every total must be more than 0."; return; }
   try {
-    await setDoc(doc(db, "users", uid, "settings", "examTotals"), { totals: vals, updatedAt: serverTimestamp() });
+    await setDoc(setupRef(), { totals: vals, updatedAt: serverTimestamp() }, { merge: true });
     $("totmsg").textContent = "Totals saved. Marks you saved earlier keep their own totals.";
   } catch (e) { $("totmsg").textContent = "Could not save: " + e.code; }
 });
-renderTotals(); fillTotal();
+
+/* add marks: one exam, every subject */
+function renderEntry(){
+  const ei = +$("exam").value, subs = effSubjects(), t = totals[ei];
+  $("examNote").textContent = `${EXAMS[ei]} is out of ${t} marks for every subject.`;
+  if (!subs.length){ $("entryRows").innerHTML = `<p class="empty">Add your subjects in the setup box above first.</p>`; return; }
+  const look = {}; marks.forEach(m => look[m.sid + "|" + m.examIndex] = m);
+  $("entryRows").innerHTML = subs.map(s => {
+    const m = look[s.id + "|" + ei], tot = m ? m.total : t;
+    return `<div class="erow" data-sid="${s.id}" data-name="${esc(s.name)}">
+      <span class="en">${esc(s.name)}</span>
+      <input type="number" min="0" step="any" class="em" value="${m ? m.score : ""}" aria-label="Marks in ${esc(s.name)}">
+      <span class="of"><span class="tv">out of ${tot}</span><input type="number" min="1" step="any" class="et" value="${tot}" hidden aria-label="Total for ${esc(s.name)}"><button type="button" class="x ed">change</button></span>
+    </div>`;
+  }).join("");
+}
+$("exam").onchange = () => { entryDirty = false; renderEntry(); };
+$("entryRows").addEventListener("input", () => { entryDirty = true; });
+$("entryRows").addEventListener("click", ev => {
+  const b = ev.target.closest(".ed"); if (!b) return;
+  const box = b.parentElement;
+  box.querySelector(".tv").hidden = true; box.querySelector(".et").hidden = false; b.hidden = true; entryDirty = true;
+});
+$("entryForm").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const ei = +$("exam").value, jobs = [], bad = [];
+  document.querySelectorAll(".erow").forEach(r => {
+    const raw = r.querySelector(".em").value; if (raw === "") return;
+    const score = parseFloat(raw), total = parseFloat(r.querySelector(".et").value);
+    if (!(total > 0) || score < 0 || score > total){ bad.push(r.dataset.name); return; }
+    jobs.push(setDoc(doc(db, "users", uid, "marks", r.dataset.sid + "__" + ei),
+      { subject: r.dataset.name, sid: r.dataset.sid, exam: EXAMS[ei], examIndex: ei, score, total, updatedAt: serverTimestamp() }));
+  });
+  if (bad.length){ $("addmsg").textContent = "Check the marks for " + bad.join(", ") + ". They must be between 0 and the total."; return; }
+  if (!jobs.length){ $("addmsg").textContent = "Enter marks for at least one subject."; return; }
+  try {
+    await Promise.all(jobs);
+    $("addmsg").textContent = `Saved ${jobs.length} subject${jobs.length > 1 ? "s" : ""} for ${EXAMS[ei]}.`;
+    entryDirty = false; renderEntry();
+  } catch (e) { $("addmsg").textContent = "Could not save: " + e.code; }
+});
+renderTotalInputs(); renderEntry();
 
 function subjects(){
   const map = new Map();
@@ -255,13 +357,78 @@ function seriesFor(sel){
   });
 }
 
+function coachData(){
+  const look = {}; marks.forEach(m => look[m.sid + "|" + m.examIndex] = m);
+  return subjects().map(s => ({
+    name: s.name,
+    pts: EXAMS.map((_, i) => look[s.id + "|" + i] ? {v: pct(look[s.id + "|" + i]), i} : null).filter(Boolean)
+  })).filter(x => x.pts.length);
+}
+
+function renderCoach(){
+  const per = coachData();
+  if (!per.length){ $("coach").innerHTML = `<p class="empty">Add marks for an exam and your feedback will appear here.</p>`; return; }
+  const latest = p => p.pts[p.pts.length-1].v;
+  const li = a => a.length ? "<ul>" + a.map(x => `<li>${x}</li>`).join("") + "</ul>" : "";
+  const avg = seriesFor("__all").map((v,i) => ({v,i})).filter(p => p.v !== null);
+  const lastAvg = avg[avg.length-1];
+
+  let lead;
+  if (avg.length > 1){
+    const d = lastAvg.v - avg[avg.length-2].v;
+    lead = d > 1 ? `Your overall average rose by ${fmt(d)} points in ${EXAMS[lastAvg.i]} and is now ${fmt(lastAvg.v)}%. Good momentum.`
+         : d < -1 ? `Your overall average dipped by ${fmt(-d)} points in ${EXAMS[lastAvg.i]} to ${fmt(lastAvg.v)}%. One dip is normal, so let's find where it came from.`
+         : `Your overall average is steady at ${fmt(lastAvg.v)}% in ${EXAMS[lastAvg.i]}.`;
+  } else lead = `Your overall average in ${EXAMS[lastAvg.i]} is ${fmt(lastAvg.v)}%. Add another exam to see your trend.`;
+
+  const sorted = [...per].sort((a,b) => latest(b) - latest(a));
+  const best = sorted[0], worst = sorted[sorted.length-1];
+  const trend = per.filter(p => p.pts.length > 1);
+  const good = [], watch = [], next = [];
+
+  if (per.length > 1) good.push(`${esc(best.name)} is your strongest subject at ${fmt(latest(best))}%.`);
+  else good.push(`${esc(best.name)} stands at ${fmt(latest(best))}%.`);
+  const gain = trend.map(p => ({p, g: latest(p) - p.pts[0].v})).sort((a,b) => b.g - a.g)[0];
+  if (gain && gain.g > 2) good.push(`${esc(gain.p.name)} has improved by ${fmt(gain.g)} points since ${EXAMS[gain.p.pts[0].i]}.`);
+  trend.filter(p => p.pts.length >= 3 && p.pts.every((x,k) => k === 0 || x.v >= p.pts[k-1].v) && latest(p) > p.pts[0].v)
+       .forEach(p => good.push(`${esc(p.name)} has gone up or held steady in every exam so far.`));
+
+  const drops = trend.map(p => ({p, d: latest(p) - p.pts[p.pts.length-2].v})).filter(x => x.d < -5).sort((a,b) => a.d - b.d);
+  drops.forEach(x => watch.push(`${esc(x.p.name)} fell ${fmt(-x.d)} points from ${EXAMS[x.p.pts[x.p.pts.length-2].i]} to ${EXAMS[x.p.pts[x.p.pts.length-1].i]}.`));
+  if (per.length > 1 && worst !== best) watch.push(`${esc(worst.name)} is your lowest right now at ${fmt(latest(worst))}%.`);
+  else if (per.length === 1 && latest(worst) < 60) watch.push(`${esc(worst.name)} is below 60%, so it deserves extra time.`);
+  if (per.length > 1 && latest(best) - latest(worst) > 25) watch.push(`There is a ${fmt(latest(best) - latest(worst))}-point gap between your best and lowest subjects. Closing it will lift your average the most.`);
+
+  if (per.length > 1 || latest(worst) < 75)
+    next.push(`Give ${esc(worst.name)} your next two study sessions. Redo the questions where you lost marks and write down why each mistake happened.`);
+  if (drops.length) next.push(`Open your ${EXAMS[drops[0].p.pts[drops[0].p.pts.length-1].i]} paper for ${esc(drops[0].p.name)} and list the topics where marks went. Fix those first.`);
+  if (per.length > 1) next.push(`Keep ${esc(best.name)} strong with a short revision each week, so it does not slip.`);
+  const nx = EXAMS[lastAvg.i + 1];
+  if (nx) next.push(`Your next exam is ${nx}. Set a target for each subject now and check back here after it.`);
+  else next.push("Your exam cycle is complete. Compare your first and last exam to see how far you came.");
+
+  $("coach").innerHTML = `<p class="lead">${lead}</p>
+    <h3>What is going well</h3>${li(good)}
+    ${watch.length ? `<h3>Needs attention</h3>${li(watch)}` : ""}
+    <h3>What to do next</h3>${li(next)}`;
+}
+
+$("copyAI").onclick = async () => {
+  const per = coachData();
+  if (!per.length){ $("coachmsg").textContent = "Add some marks first."; return; }
+  const text = "I am a student. These are my marks as a percentage in each exam, in order (" + EXAMS.join(", ") + ").\n\n" +
+    per.map(p => p.name + ": " + p.pts.map(x => EXAMS[x.i] + " " + fmt(x.v) + "%").join(", ")).join("\n") +
+    "\n\nPlease give me honest feedback: what trends do you see, which subjects need work, and what should I do before the next exam?";
+  try { await navigator.clipboard.writeText(text); $("coachmsg").textContent = "Copied. Paste it into any AI chat app for deeper feedback."; }
+  catch (e) { $("coachmsg").textContent = "Could not copy automatically. Select the text and copy it yourself."; }
+};
+
 function render(){
   const subs = subjects(), cur = $("filter").value || "__all";
   $("filter").innerHTML = `<option value="__all">All subjects</option>` + subs.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("");
   $("filter").value = (cur === "__all" || subs.some(s => s.id === cur)) ? cur : "__all";
-  $("subjects").innerHTML = subs.map(s => `<option value="${esc(s.name)}">`).join("");
   const sel = $("filter").value;
-  renderSummary(sel, subs); renderChart(sel, subs); renderTable(subs);
+  renderSummary(sel, subs); renderChart(sel, subs); renderTable(subs); renderChips(); renderCoach(); if (!entryDirty) renderEntry();
 }
 
 function renderSummary(sel, subs){
